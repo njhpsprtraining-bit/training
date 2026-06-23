@@ -2388,6 +2388,15 @@ function initApp() {
     S.settings.nextCard = 476;
     S.settings.nextOrder = 235;
     S.settings.setupDone = true;
+    // Keep वन्दित शर्मा (card 487) without order for workflow testing
+    const _testT = S.trainees.find(t => t.cardNo === 487);
+    if (_testT) {
+      const _testG = S.groups.find(g => g.traineeIds.includes(_testT.id) && g.traineeIds.length === 1);
+      if (_testG) {
+        S.groups = S.groups.filter(g => g.id !== _testG.id);
+        S.orders = S.orders.filter(o => o.groupId !== _testG.id);
+      }
+    }
     localStorage.setItem('njhps_seeded', SEED_VERSION);
     save();
     console.log('Fresh seed: ' + S.trainees.length + ' trainees, ' + S.orders.length + ' orders');
