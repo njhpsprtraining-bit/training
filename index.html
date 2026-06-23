@@ -1048,6 +1048,12 @@ function renderIssueModal(){
       <div class="field"><label>Order No. (563-XXX) *</label><input id="onum" type="number" value="${S.settings.nextOrder}" min="1" style="font-size:16px"></div>
       <div class="field"><label>Issue Date *</label><input id="odate" type="date" value="${today()}" style="font-size:16px"></div>
     </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Signing Authority *</label>
+      <select id="osign" style="font-size:16px">
+        ${(S.settings.signatories||[{id:'s1',name:S.settings.signName,desig:S.settings.signDesig}]).filter(s=>s.active!==false).map(s=>`<option value="${s.id}" ${(S.settings.defaultSignatoryId||'s1')===s.id?'selected':''}>${s.name} — ${s.desig}</option>`).join('')}
+      </select>
+    </div>
     <div class="alert alert-info" style="font-size:11px;margin-bottom:12px">
       सभी ग्रुप <strong>समान विभागों</strong> में रोटेट होंगे, परन्तु अलग-अलग समय पर ताकि एक ही समय में दो ग्रुप एक विभाग में न हों।
     </div>
@@ -1200,7 +1206,9 @@ function doIssueGrpOrder(){
   const issueDate=document.getElementById('odate').value;
   const rotation=buildGrpRotation();
   const subGroupsData=window._subGroups.map(s=>({letter:s.letter,traineeIds:[...s.traineeIds]}));
-  S.orders.push({id:uid(),localOrderNo:localNo,issueDate,groupId:gid,isGroup:true,rotation,subGroups:subGroupsData,commonDepts:window._commonDeptRows.filter(r=>r.dept),createdAt:today()});
+  const selSign = document.getElementById('osign')?.value || S.settings.defaultSignatoryId || 's1';
+  const signObj = (S.settings.signatories||[]).find(s=>s.id===selSign) || {name:S.settings.signName,desig:S.settings.signDesig};
+  S.orders.push({id:uid(),localOrderNo:localNo,issueDate,groupId:gid,isGroup:true,rotation,subGroups:subGroupsData,commonDepts:window._commonDeptRows.filter(r=>r.dept),createdAt:today(),signName:signObj.name,signDesig:signObj.desig});
   S.settings.nextOrder=Math.max(S.settings.nextOrder,localNo+1);
   save();closeModal();alert(`Order 563-${localNo} issued successfully!`);renderGroups();
 }
@@ -1339,7 +1347,7 @@ function buildSinglePage(o,t){
     <p style="text-align:justify">
       &nbsp;&nbsp;&nbsp;&nbsp;इसे सक्षम प्राधिकारी के अनुमोदन से जारी किया जाता है।
     </p>
-    <div class="signatory">${S.settings.signName}<br>${S.settings.signDesig}</div>
+    <div class="signatory">${o.signName||S.settings.signName}<br>${o.signDesig||S.settings.signDesig}</div>
     <div class="distribution">
       <strong>वितरण :-</strong><br>
       1. परियोजना प्रमुख, एनजेएचपीएस, झाकड़ी &nbsp;- सादर सूचनार्थ।<br>
@@ -1448,7 +1456,7 @@ function buildGroupPage(o,ts){
     <p style="text-align:justify">
       &nbsp;&nbsp;&nbsp;&nbsp;इसे सक्षम प्राधिकारी के अनुमोदन से जारी किया जाता है।
     </p>
-    <div class="signatory">${S.settings.signName}<br>${S.settings.signDesig}</div>
+    <div class="signatory">${o.signName||S.settings.signName}<br>${o.signDesig||S.settings.signDesig}</div>
     <div class="distribution">
       <strong>वितरण :-</strong><br>
       1. परियोजना प्रमुख, एनजेएचपीएस, झाकड़ी &nbsp;- सादर सूचनार्थ।<br>
@@ -2012,6 +2020,12 @@ function openSingleOrder(tid) {
       <div class="field"><label>Order No. (563-XXX) *</label><input id="onum" type="number" value="${S.settings.nextOrder}" min="1"></div>
       <div class="field"><label>Issue Date *</label><input id="odate" type="date" value="${today()}"></div>
     </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Signing Authority *</label>
+      <select id="osign">
+        ${(S.settings.signatories||[{id:'s1',name:S.settings.signName,desig:S.settings.signDesig}]).filter(s=>s.active!==false).map(s=>`<option value="${s.id}" ${(S.settings.defaultSignatoryId||'s1')===s.id?'selected':''}>${s.name} — ${s.desig}</option>`).join('')}
+      </select>
+    </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Training window: ${fmt(tFrom(t))} → ${fmt(tTo(t))}</div>
     <div class="card-title">Department Rotation</div>
     <div id="dr-${tid}"></div>
@@ -2237,6 +2251,73 @@ function saveBulkHistorical() {
   save(); closeModal();
   alert(`Saved ${saved} historical orders.`);
   renderTrainees();
+}
+
+
+// ── SIGNATORY MANAGEMENT ──
+function setDefaultSign(id){
+  S.settings.defaultSignatoryId=id; save();
+  renderSettings();
+}
+
+function addSignatory(){
+  showModal(`<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal modal-sm">
+    <div class="modal-drag"></div>
+    <div class="modal-hdr"><div class="modal-title">Add Signing Authority</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="field"><label>Name in Hindi (with brackets)</label>
+      <input id="sn-name" placeholder="e.g. (मनीष शर्मा)" style="font-size:16px"></div>
+    <div class="field"><label>Designation in Hindi</label>
+      <input id="sn-desig" placeholder="e.g. उप महाप्रबंधक(मा०सं०)/विभागाध्यक्ष" style="font-size:16px"></div>
+    <div class="flex flex-end mt14" style="gap:8px">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSignatory(null)">Add</button>
+    </div>
+  </div></div>`);
+}
+
+function editSignatory(id){
+  const s=(S.settings.signatories||[]).find(x=>x.id===id);
+  if(!s)return;
+  showModal(`<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal modal-sm">
+    <div class="modal-drag"></div>
+    <div class="modal-hdr"><div class="modal-title">Edit Signing Authority</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="field"><label>Name in Hindi</label>
+      <input id="sn-name" value="${s.name}" style="font-size:16px"></div>
+    <div class="field"><label>Designation in Hindi</label>
+      <input id="sn-desig" value="${s.desig}" style="font-size:16px"></div>
+    <div class="flex flex-end mt14" style="gap:8px">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSignatory('${id}')">Save</button>
+    </div>
+  </div></div>`);
+}
+
+function saveSignatory(id){
+  const name=document.getElementById('sn-name').value.trim();
+  const desig=document.getElementById('sn-desig').value.trim();
+  if(!name||!desig){alert('Fill both fields');return;}
+  if(!S.settings.signatories) S.settings.signatories=[];
+  if(id){
+    const idx=S.settings.signatories.findIndex(s=>s.id===id);
+    if(idx>=0){S.settings.signatories[idx].name=name;S.settings.signatories[idx].desig=desig;}
+  } else {
+    const newId='s'+Date.now();
+    S.settings.signatories.push({id:newId,name,desig,active:true});
+    if(!S.settings.defaultSignatoryId) S.settings.defaultSignatoryId=newId;
+  }
+  save();closeModal();renderSettings();
+}
+
+function delSignatory(id){
+  if((S.settings.signatories||[]).length<=1){alert('At least one signing authority required');return;}
+  if(!confirm('Remove this signing authority?'))return;
+  S.settings.signatories=S.settings.signatories.filter(s=>s.id!==id);
+  if(S.settings.defaultSignatoryId===id){
+    S.settings.defaultSignatoryId=S.settings.signatories[0]?.id||'s1';
+  }
+  save();renderSettings();
 }
 
 // ═══════════════ INIT ═══════════════
