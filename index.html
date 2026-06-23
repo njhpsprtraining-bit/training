@@ -2407,6 +2407,24 @@ function initApp() {
 }
 
 initApp();
+
+// Show reseed button if seed version is outdated
+(function(){
+  const seeded = localStorage.getItem('njhps_seeded');
+  if(seeded !== SEED_VERSION){
+    const btn = document.getElementById('reseed-btn-wrap');
+    if(btn) btn.style.display = 'block';
+  }
+})();
+
+function forceReseed(){
+  if(!confirm('This will reload all master data. Any orders/groups you created will be lost. Continue?')) return;
+  localStorage.removeItem(SK);
+  localStorage.removeItem('njhps_seeded');
+  localStorage.removeItem('njhps_v2');
+  localStorage.removeItem('njhps_v3');
+  location.reload();
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 // Update sync footer
 if(S.settings.lastSync){document.getElementById('sb-sync-info').textContent=`Last sync: ${fmt(S.settings.lastSync)}`}
