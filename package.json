@@ -1,0 +1,45 @@
+{
+  "name": "njhps-training",
+  "version": "1.0.0",
+  "description": "NJHPS Industrial Training Management System",
+  "main": "main.js",
+  "homepage": "./",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron-build": "npm run build && electron-builder",
+    "test": "react-scripts test"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.0",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.njhps.training",
+    "productName": "NJHPS Training System",
+    "directories": { "output": "dist" },
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "files": ["build/**/*", "main.js", "preload.js"]
+  },
+  "eslintConfig": { "extends": ["react-app"] },
+  "browserslist": {
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version"]
+  }
+}
