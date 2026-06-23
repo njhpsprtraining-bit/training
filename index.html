@@ -509,6 +509,213 @@ function traineesInDeptToday(deptName){
   return res;
 }
 
+
+// ── Hindi transliteration & mapping ──
+const DISC_HI = {
+  'Degree':'डिग्री','Diploma':'डिप्लोमा','ITI':'आईटीआई','MBA':'एमबीए',
+  'B.Tech':'बी.टेक','B.E.':'बी.ई.','BE':'बी.ई.','BTech':'बी.टेक',
+  'M.Tech':'एम.टेक','MCA':'एमसीए','BCA':'बीसीए','BSc':'बीएससी',
+  'Other':'अन्य'
+};
+const STREAM_HI = {
+  'Civil':'सिविल','Civil Engineering':'सिविल इंजीनियरिंग',
+  'Civil engineering':'सिविल इंजीनियरिंग','Civil ENGG':'सिविल इंजीनियरिंग',
+  'civil engineering':'सिविल इंजीनियरिंग',
+  'Electrical':'इलेक्ट्रिकल','Electrical Engineering':'इलेक्ट्रिकल इंजीनियरिंग',
+  'Electrical engineering':'इलेक्ट्रिकल इंजीनियरिंग',
+  'ELECTRICAL ENGINEERING':'इलेक्ट्रिकल इंजीनियरिंग',
+  'Electrical Engg.':'इलेक्ट्रिकल इंजीनियरिंग',
+  'Electrical engg':'इलेक्ट्रिकल इंजीनियरिंग',
+  'Electrical engineer':'इलेक्ट्रिकल इंजीनियर',
+  'EEE':'इलेक्ट्रिकल एवं इलेक्ट्रॉनिक्स इंजीनियरिंग',
+  'Mechanical':'मैकेनिकल','Mechanical Engineering':'मैकेनिकल इंजीनियरिंग',
+  'Mechanical engineering':'मैकेनिकल इंजीनियरिंग',
+  'MECHANICAL ENGINEERING':'मैकेनिकल इंजीनियरिंग',
+  'Mechanical Engineer':'मैकेनिकल इंजीनियर','Mechanical':'मैकेनिकल',
+  'Electronics and Communication Engineering':'इलेक्ट्रॉनिक्स एवं संचार इंजीनियरिंग',
+  'Electronics':'इलेक्ट्रॉनिक्स',
+  'Computer Science':'कंप्यूटर विज्ञान','IT':'सूचना प्रौद्योगिकी',
+  'Information Technology':'सूचना प्रौद्योगिकी',
+  'HR':'मानव संसाधन','Human Resource':'मानव संसाधन',
+  'MBA(HR)':'एमबीए (मानव संसाधन)','MBA-HR':'एमबीए (मानव संसाधन)',
+  'MBA (HR)':'एमबीए (मानव संसाधन)',
+  'Finance':'वित्त','BTech EE':'बी.टेक (इलेक्ट्रिकल)',
+  'BE EE':'बी.ई. (इलेक्ट्रिकल)',
+  'Btrch mech':'बी.टेक (मैकेनिकल)',
+  'Instrumentation':'इंस्ट्रुमेंटेशन',
+  'Instrumentation engineering':'इंस्ट्रुमेंटेशन इंजीनियरिंग',
+  'Electrician':'इलेक्ट्रीशियन','ELECTRICIAN':'इलेक्ट्रीशियन',
+  'BBA':'बीबीए','Hydro Engineering':'हाइड्रो इंजीनियरिंग',
+  'CIVIL ENGINEERING':'सिविल इंजीनियरिंग',
+};
+
+function hiDisc(d){ return DISC_HI[d]||d; }
+function hiStream(s){ return STREAM_HI[s]||s; }
+
+// Transliterate English name to Hindi using basic phonetic mapping
+const PHON = {
+  'aa':'आ','ai':'ऐ','au':'औ','ee':'ई','oo':'ऊ','sh':'श','ch':'च',
+  'kh':'ख','gh':'घ','jh':'झ','th':'थ','dh':'ध','ph':'फ','bh':'भ',
+  'ng':'ङ','ck':'क','qu':'क्व',
+  'a':'अ','b':'ब','c':'क','d':'द','e':'े','f':'फ','g':'ग','h':'ह',
+  'i':'ि','j':'ज','k':'क','l':'ल','m':'म','n':'न','o':'ो','p':'प',
+  'q':'क','r':'र','s':'स','t':'त','u':'ु','v':'व','w':'व','x':'क्स',
+  'y':'य','z':'ज'
+};
+
+// Simple phonetic transliteration for names
+function translitName(name){
+  if(!name) return '';
+  // Check if already has Hindi chars
+  if(/[ऀ-ॿ]/.test(name)) return name;
+  // Simple approach: keep English but wrap for display
+  // True transliteration is complex - use the name as-is but indicate it's a name
+  return name;
+}
+
+// Transliterate institution names
+function hiInst(inst){
+  if(!inst) return '____________';
+  if(/[ऀ-ॿ]/.test(inst)) return inst;
+  // Common mappings
+  const map = {
+    'NIT HAMIRPUR':'नेशनल इंस्टीट्यूट ऑफ टेक्नोलॉजी, हमीरपुर',
+    'NIT Hamirpur':'नेशनल इंस्टीट्यूट ऑफ टेक्नोलॉजी, हमीरपुर',
+    'Nit hamirpur':'नेशनल इंस्टीट्यूट ऑफ टेक्नोलॉजी, हमीरपुर',
+    'National Institute of Technology Hamirpur':'नेशनल इंस्टीट्यूट ऑफ टेक्नोलॉजी, हमीरपुर',
+    'National Institute of technology, Hamirpur':'नेशनल इंस्टीट्यूट ऑफ टेक्नोलॉजी, हमीरपुर',
+    'Thapar Institute of Engineering and Technology':'थापर इंस्टीट्यूट ऑफ इंजीनियरिंग एवं टेक्नोलॉजी, पटियाला',
+    'Thapar institute Patiala':'थापर इंस्टीट्यूट, पटियाला',
+    'Chitkara University':'चितकारा यूनिवर्सिटी',
+    'Chitkara University punjab':'चितकारा यूनिवर्सिटी, पंजाब',
+    'Bahra university':'बहरा यूनिवर्सिटी',
+    'Shoolini university':'शूलिनी यूनिवर्सिटी',
+    'Tulas Institute':'तुलस इंस्टीट्यूट',
+    'AKG Engineering college':'एकेजी इंजीनियरिंग कॉलेज, गाजियाबाद',
+    'UIET':'यूआईईटी, पंजाब विश्वविद्यालय चंडीगढ़',
+    'UIET Panjab University Chandigarh':'यूआईईटी, पंजाब विश्वविद्यालय चंडीगढ़',
+    'Punjabi University Patiala':'पंजाबी यूनिवर्सिटी, पटियाला',
+    'HPU Business School Shimla':'हिमाचल प्रदेश यूनिवर्सिटी बिजनेस स्कूल, शिमला',
+    'Govt PG College Dharamshala':'राजकीय स्नातकोत्तर महाविद्यालय, धर्मशाला',
+    'Govt. PG college Dharamshala':'राजकीय स्नातकोत्तर महाविद्यालय, धर्मशाला',
+    'Central University of HP Dharamshala':'केंद्रीय विश्वविद्यालय हिमाचल प्रदेश, धर्मशाला',
+    'Central university of HP':'केंद्रीय विश्वविद्यालय हिमाचल प्रदेश',
+    'Central University of HP':'केंद्रीय विश्वविद्यालय हिमाचल प्रदेश',
+    'Baddi University':'बद्दी यूनिवर्सिटी',
+    'Green hills engineering college':'ग्रीन हिल्स इंजीनियरिंग कॉलेज',
+    'GREEN HILLS ENGG.COLLEGE SOLAN':'ग्रीन हिल्स इंजीनियरिंग कॉलेज, सोलन',
+    'Green hills polytechnic college':'ग्रीन हिल्स पॉलिटेक्निक कॉलेज',
+    'ABVGIET Pragati Nagar Shimla':'अटल बिहारी वाजपेयी राजकीय अभियांत्रिकी संस्थान, प्रगतिनगर, शिमला',
+    'ABVGIET PRAGATINAGAR':'अटल बिहारी वाजपेयी राजकीय अभियांत्रिकी संस्थान, प्रगतिनगर',
+    'ABVGIET pragtinagar Shimla':'अटल बिहारी वाजपेयी राजकीय अभियांत्रिकी संस्थान, प्रगतिनगर',
+    'ABVGIET pragatinagar':'अटल बिहारी वाजपेयी राजकीय अभियांत्रिकी संस्थान, प्रगतिनगर',
+    'AVBGIET Pragatinagar Shimla':'अटल बिहारी वाजपेयी राजकीय अभियांत्रिकी संस्थान, प्रगतिनगर',
+    'A.B.V.G.I.E.T Pragatinagar':'अटल बिहारी वाजपेयी राजकीय अभियांत्रिकी संस्थान, प्रगतिनगर',
+    'Govt Hydro Engineering college':'राजकीय हाइड्रो इंजीनियरिंग कॉलेज',
+    'RGGEC Nagrota Bagwan':'राजीव गांधी राजकीय अभियांत्रिकी कॉलेज, नगरोटा बगवां',
+    'Govt. Polytechnic Kinnour':'राजकीय पॉलिटेक्निक कॉलेज, किन्नौर',
+    'Govt. Polytechnic kullu':'राजकीय पॉलिटेक्निक कॉलेज, कुल्लू',
+    'Govt. Polytechnic Sundernagar':'राजकीय पॉलिटेक्निक कॉलेज, सुंदरनगर',
+    'Govt. Polytechnic sundernagar':'राजकीय पॉलिटेक्निक कॉलेज, सुंदरनगर',
+    'Govt. Polytechnic kinnour':'राजकीय पॉलिटेक्निक कॉलेज, किन्नौर',
+    'Government Polytechnic Sundernagar':'राजकीय पॉलिटेक्निक कॉलेज, सुंदरनगर',
+    'Government polytechnic kinnaur':'राजकीय पॉलिटेक्निक कॉलेज, किन्नौर',
+    'Government Polytechnic College Kinnour':'राजकीय पॉलिटेक्निक कॉलेज, किन्नौर',
+    'Govt poly paonta sahib':'राजकीय पॉलिटेक्निक कॉलेज, पाँवटा साहिब',
+    'Govt. Poly poanta shaib':'राजकीय पॉलिटेक्निक कॉलेज, पाँवटा साहिब',
+    'Govt Polytechnic Paonta Sahib':'राजकीय पॉलिटेक्निक कॉलेज, पाँवटा साहिब',
+    'Govt polytechnic paonta sahib':'राजकीय पॉलिटेक्निक कॉलेज, पाँवटा साहिब',
+    'Govt.polytechnic paonta sahib':'राजकीय पॉलिटेक्निक कॉलेज, पाँवटा साहिब',
+    'Govt.polytechnic Rohru':'राजकीय पॉलिटेक्निक कॉलेज, रोहड़ू',
+    'Government polytechnic rohru':'राजकीय पॉलिटेक्निक कॉलेज, रोहड़ू',
+    'Govt polytechnic rohru':'राजकीय पॉलिटेक्निक कॉलेज, रोहड़ू',
+    'Government Polytechnic Paonta Sahib (Sirmour)HP':'राजकीय पॉलिटेक्निक कॉलेज, पाँवटा साहिब (सिरमौर)',
+    'Govt.polytechnic Paonta Sahib (Sirmour)':'राजकीय पॉलिटेक्निक कॉलेज, पाँवटा साहिब (सिरमौर)',
+    'Govt.Polytechnic Paonta Sahib (SIRMOUR) H.P':'राजकीय पॉलिटेक्निक कॉलेज, पाँवटा साहिब (सिरमौर)',
+    'LR Polytechnic Solan':'एलआर पॉलिटेक्निक, सोलन',
+    'Lr polytechnic solan':'एलआर पॉलिटेक्निक, सोलन',
+    'LR polytechnic solan':'एलआर पॉलिटेक्निक, सोलन',
+    'L.R polytechnic solan':'एलआर पॉलिटेक्निक, सोलन',
+    'L.R group of institute solan':'एलआर ग्रुप ऑफ इंस्टीट्यूट, सोलन',
+    'Lr group of institutes':'एलआर ग्रुप ऑफ इंस्टीट्यूट',
+    'Lr,group of institutes':'एलआर ग्रुप ऑफ इंस्टीट्यूट',
+    'Lr group of institute':'एलआर ग्रुप ऑफ इंस्टीट्यूट',
+    'Ghec':'ग्रीन हिल्स इंजीनियरिंग कॉलेज',
+    'I.T.I. Rampur':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर',
+    'Govt.ITI Rampur Bushahr':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'GOVT. ITI Rampur Bushahr':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt.ITI.Rampur':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर',
+    'Govt.I.T.I. Rampur bushahr':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt.i.t.i rampur bushahr':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt. I. T. I rampur bushahar':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt. iTI. RAMPUR bushahr':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt. ITI Rampur BSR':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt. ITI Rampur Bushahr':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt.iti':'राजकीय औद्योगिक प्रशिक्षण संस्थान',
+    'Govt.iti rampur bushahr':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt iti Rampur bushar':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt ITI Rampur Brs.':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt. ITI Rampur Bsr.':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt .ITI.Rampur Bushahr':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt ITI bushar':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'Govt ITI Rampur bushar':'राजकीय औद्योगिक प्रशिक्षण संस्थान, रामपुर बुशहर',
+    'ITI KUMARSAIN':'राजकीय औद्योगिक प्रशिक्षण संस्थान, कुमारसैन',
+    'Govt Industrial Training Institute kumarsain':'राजकीय औद्योगिक प्रशिक्षण संस्थान, कुमारसैन',
+    'I.T.I':'आईटीआई',
+    'Government polytechnic clg baru':'राजकीय पॉलिटेक्निक कॉलेज, बारू (हमीरपुर)',
+    'government polytechnic clg baru (Hamirpur)':'राजकीय पॉलिटेक्निक कॉलेज, बारू (हमीरपुर)',
+  };
+  return map[inst] || inst;
+}
+
+// Name Hindi mapping for known trainees
+const NAME_HI = {
+  'Tanuja Sahjeta':'तनुजा साहजेता','Himani':'हिमानी','Muskaan Negi':'मुस्कान नेगी',
+  'Lakshya Gupta':'लक्ष्य गुप्ता','Shivam':'शिवम','Gaurav Singh':'गौरव सिंह',
+  'Rahul':'राहुल','Jyoti devi':'ज्योति देवी','Saurav sharma':'सौरव शर्मा',
+  'Mohammed Aman':'मोहम्मद अमान','Aakanksha Sharma':'आकांक्षा शर्मा',
+  'Abhijeet':'अभिजीत','Saksham Gupta':'सक्षम गुप्ता','Vijay':'विजय',
+  'Deepak Kumar Bhengra':'दीपक कुमार भेंगरा','Shubham':'शुभम',
+  'CHINTAMANI':'चिंतामणि','Kunal':'कुनाल','Sanjay Dev':'संजय देव',
+  'Rajan':'राजन','Lalit thakur':'ललित ठाकुर','Bhavesh Thakur':'भावेश ठाकुर',
+  'Hemraj':'हेमराज','Rishav Duglet':'रिशव डुगलेट','Omprakash':'ओमप्रकाश',
+  'Rohit Rana':'रोहित राणा','Archit Gupta':'अर्चित गुप्ता',
+  'Abhishek Kumar':'अभिषेक कुमार','Priyanshu kumar':'प्रियांशु कुमार',
+  'Nikhil Bharti':'निखिल भारती','Aryan Sood':'आर्यन सूद',
+  'Vibhor Chauhan':'विभोर चौहान','Ajay Gupta':'अजय गुप्ता',
+  'Prikshit Verma':'परीक्षित वर्मा','Utkarsh Rana':'उत्कर्ष राणा',
+  'Mohit Sharma':'मोहित शर्मा','Anuj Pancharas':'अनुज पंचरस',
+  'Anshuman Tayal':'अंशुमन टायल','Vaibhav kant':'वैभव कांत',
+  'Kuldeep':'कुलदीप','Praveen kumar':'प्रवीण कुमार','Nikhil Verma':'निखिल वर्मा',
+  'Vikram Singh':'विक्रम सिंह','Manoj Negi':'मनोज नेगी','Tarun':'तरुण',
+  'Loveneet Rajtu':'लवनीत राजतू','Priti khojan':'प्रीती खोजन',
+  'Sher singh':'शेर सिंह','Baby':'बेबी','Ritika Bandhu':'रितिका बंधु',
+  'Suraj kumar':'सूरज कुमार','Manoj Kumar':'मनोज कुमार',
+  'Hameed kumar':'हमीद कुमार','Yashwant':'यशवंत','Ved Prakash':'वेद प्रकाश',
+  'Ravinder Kumar':'रविंदर कुमार','Vikas mehta':'विकास मेहता',
+  'Anmol Singh':'अनमोल सिंह','Kanishka':'कनिष्का','Adityansh Thakur':'आदित्यांश ठाकुर',
+  'Nishchal':'निश्चल','Vansh aggarwal':'वंश अग्रवाल','Ankit Negi':'अंकित नेगी',
+  'Sonam Youdon':'सोनम यूडन','Sonam tashi':'सोनम ताशी',
+  'Gaurav Verma':'गौरव वर्मा','SHIVAM SHARMA':'शिवम शर्मा',
+  'Pallavi Thakur':'पल्लवी ठाकुर','Ishita':'इशिता','Abhishek':'अभिषेक',
+  'Aaditya koundal':'आदित्य कौंडल','Nikhil Kumar':'निखिल कुमार',
+  'AKANSHA SINGH':'आकांक्षा सिंह','Saivya Chaudhary':'सैव्या चौधरी',
+  'vipin negi':'विपिन नेगी','Varun Koundal':'वरुण कौंडल','Sakshi':'साक्षी',
+  'Ankush Chouhan':'अंकुश चौहान','Akshat':'अक्षत','Nishant':'निशांत',
+  'Mohit Chauhan':'मोहित चौहान','Nikhil Rana':'निखिल राणा',
+  'Ankit Kapoor':'अंकित कपूर','Ankush Bhatia':'अंकुश भाटिया',
+  'Abhishek Barmota':'अभिषेक बरमोटा','Sahil Thakur':'साहिल ठाकुर',
+  'Sahil':'साहिल','Vikas':'विकास','Dimple kumari':'डिंपल कुमारी',
+  'Ananya Bharti':'अनन्या भारती','Hitesh bharti':'हितेश भारती',
+  'Nikhil':'निखिल','Shubham Chaudhary':'शुभम चौधरी','David':'डेविड',
+  'Pankaj kumar':'पंकज कुमार','Vishal':'विशाल','Chetan Verma':'चेतन वर्मा',
+  'Hariom':'हरिओम','Hritik Vekta':'हृतिक वेकटा','Deepak Thakur':'दीपक ठाकुर',
+  'Vanshaj':'वंशज','Suraj Kumar':'सूरज कुमार','Yogesh':'योगेश',
+  'Pankaj':'पंकज','Sanjeev':'संजीव',
+};
+
+function hiName(n){ return NAME_HI[n]||n; }
+
 const DEPTS=['पीएचईएम','ओपीएच','पीएसआईटी&सी','पीएसआईटी','एचसीएफ़','पीएचएमएम','ओ&एम (सिविल)','ओ&एम डैम','एमएमजी','स्थापना','आईआर एवं कल्याण','जनसंपर्क','प्रशासन','राजभाषा','ट्रेनिंग','सीएसआर','हार्डकोटिंग'];
 const REPORTING={'पीएचईएम':'विभागाध्यक्ष (पीएचईएम)','ओपीएच':'विभागाध्यक्ष (ओपीएच)','पीएसआईटी&सी':'विभागाध्यक्ष (पीएसआईटी&सी)','पीएसआईटी':'विभागाध्यक्ष (पीएसआईटी)','एचसीएफ़':'विभागाध्यक्ष (एचसीएफ़)','पीएचएमएम':'विभागाध्यक्ष (पीएचएमएम)','ओ&एम (सिविल)':'विभागाध्यक्ष (ओ&एम (सिविल))','ओ&एम डैम':'विभागाध्यक्ष (ओएंडएम डैम)','एमएमजी':'विभागाध्यक्ष (एमएमजी)','स्थापना':'प्रबंधक (स्थापना)','आईआर एवं कल्याण':'प्रबंधक (आईआर एवं कल्याण)','जनसंपर्क':'प्रबंधक (जनसंपर्क)','प्रशासन':'प्रबंधक (प्रशासन)','राजभाषा':'प्रबंधक (राजभाषा)','ट्रेनिंग':'प्रबंधक (ट्रेनिंग)','सीएसआर':'प्रबंधक (सीएसआर)','हार्डकोटिंग':'विभागाध्यक्ष (हार्डकोटिंग)'};
 
@@ -1078,35 +1285,39 @@ function buildSinglePage(o,t){
     : `${o.localOrderNo || '____________'}, दिनांक ${fmtHindi(o.issueDate) || '____________'}`;
 
   const reportDt = fmtHindi(t.reportDate || tFrom(t)) || '____________';
-  const discLine = [t.discipline, t.stream ? '('+t.stream+')' : ''].filter(Boolean).join(' ');
-  const instLine = t.institution || '____________';
+  const nameHi = hiName(t.name);
+  const discHi = hiDisc(t.discipline);
+  const streamHi = hiStream(t.stream);
+  const instHi = hiInst(t.institution);
+  const discLine = discHi + (streamHi ? ' (' + streamHi + ')' : '');
 
   return `<div class="order-preview">
     <div style="text-align:center;margin-bottom:4px">
-      <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Outer gold ring -->
-        <circle cx="50" cy="50" r="48" fill="#f5a623"/>
-        <!-- Blue main circle -->
-        <circle cx="50" cy="50" r="44" fill="#003087"/>
-        <!-- White inner circle -->
-        <circle cx="50" cy="50" r="36" fill="white"/>
-        <!-- Blue center circle -->
-        <circle cx="50" cy="50" r="28" fill="#003087"/>
-        <!-- Water waves -->
-        <path d="M26 48 Q32 42 38 48 Q44 54 50 48 Q56 42 62 48 Q68 54 74 48" stroke="white" stroke-width="2.5" fill="none"/>
-        <path d="M26 55 Q32 49 38 55 Q44 61 50 55 Q56 49 62 55 Q68 61 74 55" stroke="white" stroke-width="2.5" fill="none"/>
-        <!-- SJVN text -->
-        <text x="50" y="40" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="13" font-weight="900" fill="white" letter-spacing="1">SJVN</text>
-        <!-- Gold arc text at bottom -->
-        <path id="arc" d="M 20 50 A 30 30 0 0 0 80 50" fill="none"/>
-        <text font-family="Arial,sans-serif" font-size="7" fill="#f5a623" font-weight="700">
-          <textPath href="#arc" startOffset="15%">HYDRO POWER</textPath>
-        </text>
-        <!-- Outer ring text -->
-        <path id="outerArc" d="M 10 50 A 40 40 0 1 1 90 50" fill="none"/>
-        <text font-family="Arial,sans-serif" font-size="6.5" fill="white">
-          <textPath href="#outerArc" startOffset="5%">SJVN LIMITED • नाथपा झाकड़ी • JHAKRI •</textPath>
-        </text>
+      <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="cp"><circle cx="45" cy="45" r="43"/></clipPath>
+        </defs>
+        <!-- Gold outer border -->
+        <circle cx="45" cy="45" r="44" fill="#D4A017" stroke="#8B6914" stroke-width="1"/>
+        <!-- Dark blue ring -->
+        <circle cx="45" cy="45" r="40" fill="#003087"/>
+        <!-- White ring -->
+        <circle cx="45" cy="45" r="34" fill="white"/>
+        <!-- Blue inner -->
+        <circle cx="45" cy="45" r="30" fill="#003087"/>
+        <!-- Water ripple lines -->
+        <path d="M22 42 Q28 36 34 42 Q40 48 46 42 Q52 36 58 42 Q64 48 68 42" stroke="#4FC3F7" stroke-width="2" fill="none"/>
+        <path d="M22 50 Q28 44 34 50 Q40 56 46 50 Q52 44 58 50 Q64 56 68 50" stroke="#4FC3F7" stroke-width="2" fill="none"/>
+        <!-- SJVN bold text -->
+        <text x="45" y="38" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="12" font-weight="900" fill="white" letter-spacing="2">SJVN</text>
+        <!-- LIMITED text -->
+        <text x="45" y="52" text-anchor="middle" font-family="Arial,sans-serif" font-size="5.5" fill="#D4A017" letter-spacing="1">LIMITED</text>
+        <!-- White band for bottom text -->
+        <path d="M 5 45 A 40 40 0 0 0 85 45" fill="white"/>
+        <!-- HYDRO POWER text in white band -->
+        <text x="45" y="71" text-anchor="middle" font-family="Arial,sans-serif" font-size="6" fill="#003087" font-weight="700" letter-spacing="1">HYDRO POWER</text>
+        <!-- Outer arc text: एसजेवीएन लिमिटेड -->
+        <text x="45" y="15" text-anchor="middle" font-family="Arial,sans-serif" font-size="6" fill="white" font-weight="600">एसजेवीएन लिमिटेड</text>
       </svg>
     </div>
     <h2>एसजेवीएन लिमिटेड</h2>
@@ -1119,7 +1330,7 @@ function buildSinglePage(o,t){
     <div class="order-heading">कार्यालय आदेश</div>
     <p style="text-align:justify;margin-bottom:14px">
       &nbsp;&nbsp;&nbsp;&nbsp;निगमित कार्यालय आदेश संख्या ${chqRefLine} की अनुपालना में
-      ${sal} <strong>${t.name}</strong>, ${discLine}, ${instLine}
+      ${sal} <strong>${nameHi}</strong>, ${discLine}, ${instHi}
       के ${stype} ने आज दिनांक ${reportDt} को औद्योगिक प्रशिक्षण हेतु इस कार्यालय में रिपोर्ट किया है।
       ${hasDepts ? 'इस अवधि के दौरान उनका प्रशिक्षण कार्यक्रम निम्नानुसार होगा:-' : ''}
     </p>
@@ -1210,57 +1421,59 @@ function buildGroupPage(o,ts){
 
   return `<div class="order-preview">
     <div style="text-align:center;margin-bottom:4px">
-      <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Outer gold ring -->
-        <circle cx="50" cy="50" r="48" fill="#f5a623"/>
-        <!-- Blue main circle -->
-        <circle cx="50" cy="50" r="44" fill="#003087"/>
-        <!-- White inner circle -->
-        <circle cx="50" cy="50" r="36" fill="white"/>
-        <!-- Blue center circle -->
-        <circle cx="50" cy="50" r="28" fill="#003087"/>
-        <!-- Water waves -->
-        <path d="M26 48 Q32 42 38 48 Q44 54 50 48 Q56 42 62 48 Q68 54 74 48" stroke="white" stroke-width="2.5" fill="none"/>
-        <path d="M26 55 Q32 49 38 55 Q44 61 50 55 Q56 49 62 55 Q68 61 74 55" stroke="white" stroke-width="2.5" fill="none"/>
-        <!-- SJVN text -->
-        <text x="50" y="40" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="13" font-weight="900" fill="white" letter-spacing="1">SJVN</text>
-        <!-- Gold arc text at bottom -->
-        <path id="arc" d="M 20 50 A 30 30 0 0 0 80 50" fill="none"/>
-        <text font-family="Arial,sans-serif" font-size="7" fill="#f5a623" font-weight="700">
-          <textPath href="#arc" startOffset="15%">HYDRO POWER</textPath>
-        </text>
-        <!-- Outer ring text -->
-        <path id="outerArc" d="M 10 50 A 40 40 0 1 1 90 50" fill="none"/>
-        <text font-family="Arial,sans-serif" font-size="6.5" fill="white">
-          <textPath href="#outerArc" startOffset="5%">SJVN LIMITED • नाथपा झाकड़ी • JHAKRI •</textPath>
-        </text>
+      <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="cp"><circle cx="45" cy="45" r="43"/></clipPath>
+        </defs>
+        <!-- Gold outer border -->
+        <circle cx="45" cy="45" r="44" fill="#D4A017" stroke="#8B6914" stroke-width="1"/>
+        <!-- Dark blue ring -->
+        <circle cx="45" cy="45" r="40" fill="#003087"/>
+        <!-- White ring -->
+        <circle cx="45" cy="45" r="34" fill="white"/>
+        <!-- Blue inner -->
+        <circle cx="45" cy="45" r="30" fill="#003087"/>
+        <!-- Water ripple lines -->
+        <path d="M22 42 Q28 36 34 42 Q40 48 46 42 Q52 36 58 42 Q64 48 68 42" stroke="#4FC3F7" stroke-width="2" fill="none"/>
+        <path d="M22 50 Q28 44 34 50 Q40 56 46 50 Q52 44 58 50 Q64 56 68 50" stroke="#4FC3F7" stroke-width="2" fill="none"/>
+        <!-- SJVN bold text -->
+        <text x="45" y="38" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="12" font-weight="900" fill="white" letter-spacing="2">SJVN</text>
+        <!-- LIMITED text -->
+        <text x="45" y="52" text-anchor="middle" font-family="Arial,sans-serif" font-size="5.5" fill="#D4A017" letter-spacing="1">LIMITED</text>
+        <!-- White band for bottom text -->
+        <path d="M 5 45 A 40 40 0 0 0 85 45" fill="white"/>
+        <!-- HYDRO POWER text in white band -->
+        <text x="45" y="71" text-anchor="middle" font-family="Arial,sans-serif" font-size="6" fill="#003087" font-weight="700" letter-spacing="1">HYDRO POWER</text>
+        <!-- Outer arc text: एसजेवीएन लिमिटेड -->
+        <text x="45" y="15" text-anchor="middle" font-family="Arial,sans-serif" font-size="6" fill="white" font-weight="600">एसजेवीएन लिमिटेड</text>
       </svg>
     </div>
     <div style="text-align:center;margin-bottom:4px">
-      <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Outer gold ring -->
-        <circle cx="50" cy="50" r="48" fill="#f5a623"/>
-        <!-- Blue main circle -->
-        <circle cx="50" cy="50" r="44" fill="#003087"/>
-        <!-- White inner circle -->
-        <circle cx="50" cy="50" r="36" fill="white"/>
-        <!-- Blue center circle -->
-        <circle cx="50" cy="50" r="28" fill="#003087"/>
-        <!-- Water waves -->
-        <path d="M26 48 Q32 42 38 48 Q44 54 50 48 Q56 42 62 48 Q68 54 74 48" stroke="white" stroke-width="2.5" fill="none"/>
-        <path d="M26 55 Q32 49 38 55 Q44 61 50 55 Q56 49 62 55 Q68 61 74 55" stroke="white" stroke-width="2.5" fill="none"/>
-        <!-- SJVN text -->
-        <text x="50" y="40" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="13" font-weight="900" fill="white" letter-spacing="1">SJVN</text>
-        <!-- Gold arc text at bottom -->
-        <path id="arc" d="M 20 50 A 30 30 0 0 0 80 50" fill="none"/>
-        <text font-family="Arial,sans-serif" font-size="7" fill="#f5a623" font-weight="700">
-          <textPath href="#arc" startOffset="15%">HYDRO POWER</textPath>
-        </text>
-        <!-- Outer ring text -->
-        <path id="outerArc" d="M 10 50 A 40 40 0 1 1 90 50" fill="none"/>
-        <text font-family="Arial,sans-serif" font-size="6.5" fill="white">
-          <textPath href="#outerArc" startOffset="5%">SJVN LIMITED • नाथपा झाकड़ी • JHAKRI •</textPath>
-        </text>
+      <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="cp"><circle cx="45" cy="45" r="43"/></clipPath>
+        </defs>
+        <!-- Gold outer border -->
+        <circle cx="45" cy="45" r="44" fill="#D4A017" stroke="#8B6914" stroke-width="1"/>
+        <!-- Dark blue ring -->
+        <circle cx="45" cy="45" r="40" fill="#003087"/>
+        <!-- White ring -->
+        <circle cx="45" cy="45" r="34" fill="white"/>
+        <!-- Blue inner -->
+        <circle cx="45" cy="45" r="30" fill="#003087"/>
+        <!-- Water ripple lines -->
+        <path d="M22 42 Q28 36 34 42 Q40 48 46 42 Q52 36 58 42 Q64 48 68 42" stroke="#4FC3F7" stroke-width="2" fill="none"/>
+        <path d="M22 50 Q28 44 34 50 Q40 56 46 50 Q52 44 58 50 Q64 56 68 50" stroke="#4FC3F7" stroke-width="2" fill="none"/>
+        <!-- SJVN bold text -->
+        <text x="45" y="38" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="12" font-weight="900" fill="white" letter-spacing="2">SJVN</text>
+        <!-- LIMITED text -->
+        <text x="45" y="52" text-anchor="middle" font-family="Arial,sans-serif" font-size="5.5" fill="#D4A017" letter-spacing="1">LIMITED</text>
+        <!-- White band for bottom text -->
+        <path d="M 5 45 A 40 40 0 0 0 85 45" fill="white"/>
+        <!-- HYDRO POWER text in white band -->
+        <text x="45" y="71" text-anchor="middle" font-family="Arial,sans-serif" font-size="6" fill="#003087" font-weight="700" letter-spacing="1">HYDRO POWER</text>
+        <!-- Outer arc text: एसजेवीएन लिमिटेड -->
+        <text x="45" y="15" text-anchor="middle" font-family="Arial,sans-serif" font-size="6" fill="white" font-weight="600">एसजेवीएन लिमिटेड</text>
       </svg>
     </div>
     <h2>एसजेवीएन लिमिटेड</h2>
