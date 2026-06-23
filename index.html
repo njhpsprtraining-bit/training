@@ -2087,6 +2087,41 @@ initApp();
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 // Update sync footer
 if(S.settings.lastSync){document.getElementById('sb-sync-info').textContent=`Last sync: ${fmt(S.settings.lastSync)}`}
+
+function renderOrders(){
+  var list=[...S.orders].reverse();
+  var out='<div class="page-hdr"><div><div class="page-title">Issued Orders</div><div class="page-sub">'+S.orders.length+' total</div></div></div>';
+  if(!list.length){
+    out+='<div class="empty-state"><div class="empty-icon">&#x1F4C4;</div><div>No orders yet</div></div>';
+  } else {
+    list.forEach(function(o){
+      var g=o.isGroup?S.groups.find(function(x){return x.id===o.groupId}):null;
+      var ts=o.isGroup?(g?g.traineeIds:[]).map(function(id){return S.trainees.find(function(t){return t.id===id})}).filter(Boolean):[];
+      var chqs=[...new Set(ts.map(function(t){return t.chqRef}).filter(Boolean))];
+      var st=orderStatus(o.id);
+      var badge=st==='completed'?'b-green':st==='issued'?'b-orange':'b-teal';
+      var names=ts.slice(0,4).map(function(t){return '<span class="badge b-blue" style="margin:2px">'+t.name+'</span>'}).join('')+(ts.length>4?'<span class="text-muted" style="font-size:11px"> +'+(ts.length-4)+' more</span>':'');
+      var orderNum=fmtOrderNo(o.localOrderNo);
+      var dateStr=fmt(o.issueDate)+(chqs.length?' &bull; CHQ: '+chqs.join(', '):'');
+      out+='<div class="card">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+        +'<div style="font-size:18px;font-weight:800;color:var(--accent)">'+orderNum+'</div>'
+        +'<span class="badge '+badge+'">'+st+'</span>'
+        +'</div>'
+        +'<div style="margin-bottom:6px">'+names+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+dateStr+'</div>'
+        +'<div class="flex flex-wrap" style="gap:6px">'
+        +'<button class="btn btn-teal btn-sm" onclick="viewOrder(\''+o.id+'\')">View</button>'
+        +'<button class="btn btn-secondary btn-sm" onclick="editOrder(\''+o.id+'\')">Edit</button>'
+        +'<button class="btn btn-danger btn-sm" onclick="delOrder(\''+o.id+'\')">&#x1F5D1;</button>'
+        +'</div></div>';
+    });
+  }
+  document.getElementById('page-content').innerHTML=out;
+}
+
+
+
 </script>
 
 <!-- MOBILE HEADER -->
@@ -2177,40 +2212,6 @@ function updateMobileNav(page){
   const t=document.getElementById('mh-title');
   if(t) t.textContent = PAGE_TITLES[page]||page;
 }
-
-
-function renderOrders(){
-  var list=[...S.orders].reverse();
-  var out='<div class="page-hdr"><div><div class="page-title">Issued Orders</div><div class="page-sub">'+S.orders.length+' total</div></div></div>';
-  if(!list.length){
-    out+='<div class="empty-state"><div class="empty-icon">&#x1F4C4;</div><div>No orders yet</div></div>';
-  } else {
-    list.forEach(function(o){
-      var g=o.isGroup?S.groups.find(function(x){return x.id===o.groupId}):null;
-      var ts=o.isGroup?(g?g.traineeIds:[]).map(function(id){return S.trainees.find(function(t){return t.id===id})}).filter(Boolean):[];
-      var chqs=[...new Set(ts.map(function(t){return t.chqRef}).filter(Boolean))];
-      var st=orderStatus(o.id);
-      var badge=st==='completed'?'b-green':st==='issued'?'b-orange':'b-teal';
-      var names=ts.slice(0,4).map(function(t){return '<span class="badge b-blue" style="margin:2px">'+t.name+'</span>'}).join('')+(ts.length>4?'<span class="text-muted" style="font-size:11px"> +'+(ts.length-4)+' more</span>':'');
-      var orderNum=fmtOrderNo(o.localOrderNo);
-      var dateStr=fmt(o.issueDate)+(chqs.length?' &bull; CHQ: '+chqs.join(', '):'');
-      out+='<div class="card">'
-        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
-        +'<div style="font-size:18px;font-weight:800;color:var(--accent)">'+orderNum+'</div>'
-        +'<span class="badge '+badge+'">'+st+'</span>'
-        +'</div>'
-        +'<div style="margin-bottom:6px">'+names+'</div>'
-        +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+dateStr+'</div>'
-        +'<div class="flex flex-wrap" style="gap:6px">'
-        +'<button class="btn btn-teal btn-sm" onclick="viewOrder(\''+o.id+'\')">View</button>'
-        +'<button class="btn btn-secondary btn-sm" onclick="editOrder(\''+o.id+'\')">Edit</button>'
-        +'<button class="btn btn-danger btn-sm" onclick="delOrder(\''+o.id+'\')">&#x1F5D1;</button>'
-        +'</div></div>';
-    });
-  }
-  document.getElementById('page-content').innerHTML=out;
-}
-
 
 </script>
 </body>
