@@ -385,7 +385,7 @@ label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase
 // ═══════════════ STATE ═══════════════
 const SK='njhps_v2';
 let S={
-  settings:{password:'njhps2024',sheetId:'1NlBKiGMv5BECwrdqN09zq92NxqSZlMUcMLHen-OyjoU',sheetTab:'Form Responses 1',cardStart:600,nextCard:600,nextOrder:1,signName:'(मनीष शर्मा)',signDesig:'उप महाप्रबंधक(मा०सं०)/विभागाध्यक्ष',lastSync:null},
+  settings:{password:'njhps2024',sheetId:'1NlBKiGMv5BECwrdqN09zq92NxqSZlMUcMLHen-OyjoU',sheetTab:'Form Responses 1',cardStart:600,nextCard:600,nextOrder:1,signName:'(मनीष शर्मा)',signDesig:'उप महाप्रबंधक(मा०सं०)/विभागाध्यक्ष',lastSync:null,signatories:[{id:'s1',name:'(मनीष शर्मा)',desig:'उप महाप्रबंधक(मा०सं०)/विभागाध्यक्ष',active:true},{id:'s2',name:'(कनिका मल्होत्रा)',desig:'प्रबंधक(मा०सं०)',active:true},{id:'s3',name:'(कुमार किसलय राज्यवर्धन)',desig:'प्रबंधक(मा०सं०)',active:true}],defaultSignatoryId:'s1'},
   trainees:[],groups:[],orders:[],certs:[]
 };
 function save(){localStorage.setItem(SK,JSON.stringify(S))}
@@ -2367,6 +2367,10 @@ function initApp() {
     S.certs = SEED_CERTS.map(c => ({...c}));
     S.settings.nextCard = 495;
     S.settings.nextOrder = 235;
+    if(!S.settings.signatories||!S.settings.signatories.length){
+      S.settings.signatories=[{id:'s1',name:'(मनीष शर्मा)',desig:'उप महाप्रबंधक(मा०सं०)/विभागाध्यक्ष',active:true},{id:'s2',name:'(कनिका मल्होत्रा)',desig:'प्रबंधक(मा०सं०)',active:true},{id:'s3',name:'(कुमार किसलय राज्यवर्धन)',desig:'प्रबंधक(मा०सं०)',active:true}];
+      S.settings.defaultSignatoryId='s1';
+    }
     S.settings.nextCard = 476;
     S.settings.nextOrder = 235;
     S.settings.setupDone = true;
