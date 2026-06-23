@@ -399,6 +399,7 @@ function doLogin(){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='flex';
     go('dashboard');
+    try{updateMobileBadge&&updateMobileBadge();}catch(e){}
   } else {document.getElementById('lerr').style.display='block'}
 }
 function doLogout(){document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';document.getElementById('lpwd').value=''}
@@ -417,8 +418,18 @@ function go(page){
   window.scrollTo(0,0);
 }
 const pages={dashboard:renderDashboard,trainees:renderTrainees,groups:renderGroups,orders:renderOrders,deptview:renderDeptView,certificates:renderCerts,rep_status:renderRepStatus,rep_dept:renderRepDept,rep_inst:renderRepInst,rep_cert:renderRepCert,rep_annual:renderRepAnnual,settings:renderSettings};
-function render(page){const fn=pages[page];if(fn){document.getElementById('page-content').innerHTML='';fn()}updateBadge()}
-function updateBadge(){document.getElementById('badge-pending').textContent=unordered().length}
+function render(page){
+  const fn=pages[page];
+  if(fn){
+    document.getElementById('page-content').innerHTML='';
+    try{fn();}catch(e){
+      document.getElementById('page-content').innerHTML='<div class="page-wrap"><div class="alert alert-error">Error loading page: '+e.message+'<br><small>'+e.stack.split('\n')[1]+'</small></div></div>';
+      console.error('render error:',e);
+    }
+  }
+  try{updateBadge();}catch(e){console.warn('badge err',e);}
+}
+function updateBadge(){const n=unordered().length;const b=document.getElementById('badge-pending');if(b)b.textContent=n;const bn=document.getElementById('bn-dot');if(bn){bn.textContent=n;bn.style.display=n>0?'block':'none';}}
 
 // ═══════════════ HELPERS ═══════════════
 const fmt=d=>{if(!d)return'—';const dt=new Date(d);if(isNaN(dt))return d;return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})};
