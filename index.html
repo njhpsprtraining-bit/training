@@ -2440,3 +2440,116 @@ function initApp() {
   }
 }
 
+// Show reseed button if needed
+(function(){
+  const seeded = localStorage.getItem('njhps_seeded');
+  if(seeded !== SEED_VERSION){
+    const btn = document.getElementById('reseed-btn-wrap');
+    if(btn) btn.style.display = 'block';
+  }
+})();
+
+function forceReseed(){
+  if(!confirm('This will reload all master data. Any orders/groups you created will be lost. Continue?')) return;
+  localStorage.removeItem(SK);
+  localStorage.removeItem('njhps_seeded');
+  localStorage.removeItem('njhps_v2');
+  localStorage.removeItem('njhps_v3');
+  location.reload();
+}
+
+</script>
+
+<!-- MOBILE HEADER -->
+<div id="mobile-header">
+  <div class="mh-left">
+    <button class="mh-menu" onclick="toggleSB()" aria-label="Menu">&#9776;</button>
+    <span class="mh-title" id="mh-title">Dashboard</span>
+  </div>
+  <button class="mh-sync" onclick="syncSheet()" title="Sync">&#x1F504;</button>
+</div>
+<div id="sidebar-overlay" onclick="closeSB()"></div>
+
+<!-- BOTTOM NAV -->
+<div id="bottom-nav">
+  <div class="bn-item" id="bn-dashboard" onclick="mgo('dashboard')"><span class="bn-icon">&#x1F4CA;</span><span>Home</span></div>
+  <div class="bn-item" id="bn-trainees" onclick="mgo('trainees')"><span class="bn-icon">&#x1F465;</span><span>Trainees</span><span class="bn-dot" id="bn-dot">0</span></div>
+  <div class="bn-item" id="bn-deptview" onclick="mgo('deptview')"><span class="bn-icon">&#x1F3ED;</span><span>Depts</span></div>
+  <div class="bn-item" id="bn-orders" onclick="mgo('orders')"><span class="bn-icon">&#x1F4C4;</span><span>Orders</span></div>
+  <div class="bn-item" id="bn-more" onclick="toggleMore()"><span class="bn-icon">&#x22EF;</span><span>More</span></div>
+</div>
+
+<!-- MORE PANEL -->
+<div id="more-panel">
+  <div class="mp-item" onclick="mgo('groups')"><span class="mp-icon">&#x1F4CB;</span>Groups</div>
+  <div class="mp-item" onclick="mgo('certificates')"><span class="mp-icon">&#x1F393;</span>Certs</div>
+  <div class="mp-item" onclick="mgo('rep_status')"><span class="mp-icon">&#x1F504;</span>Status</div>
+  <div class="mp-item" onclick="mgo('rep_dept')"><span class="mp-icon">&#x1F3D7;&#xFE0F;</span>Dept Rpt</div>
+  <div class="mp-item" onclick="mgo('rep_inst')"><span class="mp-icon">&#x1F3EB;</span>Inst</div>
+  <div class="mp-item" onclick="mgo('rep_cert')"><span class="mp-icon">&#x1F4DC;</span>Dispatch</div>
+  <div class="mp-item" onclick="mgo('rep_annual')"><span class="mp-icon">&#x1F4C5;</span>Annual</div>
+  <div class="mp-item" onclick="mgo('settings')"><span class="mp-icon">&#x2699;&#xFE0F;</span>Settings</div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="fabAct()" title="Add">+</button>
+
+<div id="modal-root"></div>
+
+<script>
+// ── MOBILE NAV ──
+const PAGE_TITLES = {dashboard:'Dashboard',trainees:'Trainees',groups:'Groups',orders:'Orders',deptview:'Dept Live View',certificates:'Certificates',rep_status:'Status Report',rep_dept:'Dept Report',rep_inst:'Institution Report',rep_cert:'Cert & Dispatch',rep_annual:'Annual Summary',settings:'Settings'};
+
+function toggleSB(){
+  document.getElementById('sidebar').classList.toggle('sb-open');
+  document.getElementById('sidebar-overlay').classList.toggle('sb-open');
+}
+function closeSB(){
+  if(typeof closeSidebar==='function') closeSidebar();
+  document.getElementById('sidebar').classList.remove('sb-open');
+  document.getElementById('sidebar-overlay').classList.remove('sb-open');
+}
+function toggleMore(){
+  document.getElementById('more-panel').classList.toggle('mp-open');
+  document.getElementById('bn-more').classList.toggle('active');
+}
+function closeMore(){
+  document.getElementById('more-panel').classList.remove('mp-open');
+  document.getElementById('bn-more').classList.remove('active');
+}
+function mgo(page){
+  closeSB(); closeMore();
+  go(page);
+  ['dashboard','trainees','deptview','orders'].forEach(p=>{
+    const el=document.getElementById('bn-'+p);
+    if(el) el.classList.toggle('active', p===page);
+  });
+  if(!['dashboard','trainees','deptview','orders'].includes(page)){
+    document.querySelectorAll('.bn-item').forEach(el=>el.classList.remove('active'));
+    document.getElementById('bn-more').classList.add('active');
+  }
+  const t=document.getElementById('mh-title');
+  if(t) t.textContent = PAGE_TITLES[page]||page;
+}
+function fabAct(){
+  if(curPage==='trainees') openAddTrainee();
+  else if(curPage==='groups') openCreateGroup();
+  else mgo('trainees');
+}
+function updateMobileBadge(){
+  const n=unordered().length;
+  const dot=document.getElementById('bn-dot');
+  if(dot){dot.textContent=n;dot.classList.toggle('show',n>0);}
+}
+function updateMobileNav(page){
+  updateMobileBadge();
+  const t=document.getElementById('mh-title');
+  if(t) t.textContent = PAGE_TITLES[page]||page;
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('sb-open');
+  document.getElementById('sidebar-overlay').classList.remove('sb-open');
+}
+</script>
+</body>
+</html>
