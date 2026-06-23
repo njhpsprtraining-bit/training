@@ -2369,191 +2369,74 @@ const SEED_2026_ORDERS = [{"id": "3611901637", "localOrderNo": "", "issueDate": 
 })();
 
 function initApp() {
-  // Force reseed if version mismatch - wipes stale data cleanly
   const seeded = localStorage.getItem('njhps_seeded');
+
   if (seeded !== SEED_VERSION) {
-    // Clear everything and start fresh with seed data
+    // Full reseed — wipe and reload fresh
     localStorage.removeItem(SK);
     localStorage.removeItem('njhps_v2');
-    // Reinitialise S with seed data
-    S.trainees = [...SEED_TRAINEES.map(t => ({...t})), ...SEED_2026_TRAINEES.map(t => ({...t}))];
-    S.groups = [...SEED_GROUPS.map(g => ({...g})), ...SEED_2026_GROUPS.map(g => ({...g}))];
-    S.orders = [...SEED_ORDERS.map(o => ({...o})), ...SEED_2026_ORDERS.map(o => ({...o}))];
-    S.certs = SEED_CERTS.map(c => ({...c}));
-    S.settings.nextCard = 495;
+    localStorage.removeItem('njhps_v3');
+    S.trainees = [...SEED_TRAINEES, ...SEED_2026_TRAINEES].map(t => ({...t}));
+    S.groups   = [...SEED_GROUPS,   ...SEED_2026_GROUPS].map(g => ({...g}));
+    S.orders   = [...SEED_ORDERS,   ...SEED_2026_ORDERS].map(o => ({...o}));
+    S.certs    = SEED_CERTS.map(c => ({...c}));
+    S.settings.nextCard  = 495;
     S.settings.nextOrder = 235;
-    if(!S.settings.signatories||!S.settings.signatories.length){
-      S.settings.signatories=[{id:'s1',name:'(मनीष शर्मा)',desig:'उप महाप्रबंधक(मा०सं०)/विभागाध्यक्ष',active:true},{id:'s2',name:'(कनिका मल्होत्रा)',desig:'प्रबंधक(मा०सं०)',active:true},{id:'s3',name:'(कुमार किसलय राज्यवर्धन)',desig:'प्रबंधक(मा०सं०)',active:true}];
-      S.settings.defaultSignatoryId='s1';
-    }
-    S.settings.nextCard = 476;
-    S.settings.nextOrder = 235;
-    S.settings.setupDone = true;
-    // Keep वन्दित शर्मा (card 487) without order for workflow testing
-    const _testT = S.trainees.find(t => t.cardNo === 487);
-    if (_testT) {
-      const _testG = S.groups.find(g => g.traineeIds.includes(_testT.id) && g.traineeIds.length === 1);
-      if (_testG) {
-        S.groups = S.groups.filter(g => g.id !== _testG.id);
-        S.orders = S.orders.filter(o => o.groupId !== _testG.id);
-      }
+    if (!S.settings.signatories || !S.settings.signatories.length) {
+      S.settings.signatories = [
+        {id:'s1', name:'(मनीष शर्मा)',              desig:'उप महाप्रबंधक(मा०सं०)/विभागाध्यक्ष', active:true},
+        {id:'s2', name:'(कनिका मल्होत्रा)',           desig:'प्रबंधक(मा०सं०)',                    active:true},
+        {id:'s3', name:'(कुमार किसलय राज्यवर्धन)',   desig:'प्रबंधक(मा०सं०)',                    active:true}
+      ];
+      S.settings.defaultSignatoryId = 's1';
     }
     localStorage.setItem('njhps_seeded', SEED_VERSION);
     save();
-    console.log('Fresh seed: ' + S.trainees.length + ' trainees, ' + S.orders.length + ' orders');
+    console.log('Fresh seed v4: ' + S.trainees.length + ' trainees, ' + S.orders.length + ' orders');
   } else {
+    // Load from localStorage, then ensure any missing 2026 trainees are present
     load();
-  }
-}
+    let changed = false;
 
-initApp();
-
-// Show reseed button if seed version is outdated
-(function(){
-  const seeded = localStorage.getItem('njhps_seeded');
-  if(seeded !== SEED_VERSION){
-    const btn = document.getElementById('reseed-btn-wrap');
-    if(btn) btn.style.display = 'block';
-  }
-})();
-
-function forceReseed(){
-  if(!confirm('This will reload all master data. Any orders/groups you created will be lost. Continue?')) return;
-  localStorage.removeItem(SK);
-  localStorage.removeItem('njhps_seeded');
-  localStorage.removeItem('njhps_v2');
-  localStorage.removeItem('njhps_v3');
-  location.reload();
-}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
-// Update sync footer
-if(S.settings.lastSync){document.getElementById('sb-sync-info').textContent=`Last sync: ${fmt(S.settings.lastSync)}`}
-
-function renderOrders(){
-  var list=[...S.orders].reverse();
-  var out='<div class="page-hdr"><div><div class="page-title">Issued Orders</div><div class="page-sub">'+S.orders.length+' total</div></div></div>';
-  if(!list.length){
-    out+='<div class="empty-state"><div class="empty-icon">&#x1F4C4;</div><div>No orders yet</div></div>';
-  } else {
-    list.forEach(function(o){
-      var g=o.isGroup?S.groups.find(function(x){return x.id===o.groupId}):null;
-      var ts=o.isGroup?(g?g.traineeIds:[]).map(function(id){return S.trainees.find(function(t){return t.id===id})}).filter(Boolean):[];
-      var chqs=[...new Set(ts.map(function(t){return t.chqRef}).filter(Boolean))];
-      var st=orderStatus(o.id);
-      var badge=st==='completed'?'b-green':st==='issued'?'b-orange':'b-teal';
-      var names=ts.slice(0,4).map(function(t){return '<span class="badge b-blue" style="margin:2px">'+t.name+'</span>'}).join('')+(ts.length>4?'<span class="text-muted" style="font-size:11px"> +'+(ts.length-4)+' more</span>':'');
-      var orderNum=fmtOrderNo(o.localOrderNo);
-      var dateStr=fmt(o.issueDate)+(chqs.length?' &bull; CHQ: '+chqs.join(', '):'');
-      out+='<div class="card">'
-        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
-        +'<div style="font-size:18px;font-weight:800;color:var(--accent)">'+orderNum+'</div>'
-        +'<span class="badge '+badge+'">'+st+'</span>'
-        +'</div>'
-        +'<div style="margin-bottom:6px">'+names+'</div>'
-        +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+dateStr+'</div>'
-        +'<div class="flex flex-wrap" style="gap:6px">'
-        +'<button class="btn btn-teal btn-sm" onclick="viewOrder(\''+o.id+'\')">View</button>'
-        +'<button class="btn btn-secondary btn-sm" onclick="editOrder(\''+o.id+'\')">Edit</button>'
-        +'<button class="btn btn-danger btn-sm" onclick="delOrder(\''+o.id+'\')">&#x1F5D1;</button>'
-        +'</div></div>';
+    // Merge any 2026 trainees not yet in stored data
+    const existingCards = new Set(S.trainees.map(t => t.cardNo));
+    SEED_2026_TRAINEES.forEach(t => {
+      if (!existingCards.has(t.cardNo)) {
+        S.trainees.push({...t});
+        changed = true;
+      }
     });
-  }
-  document.getElementById('page-content').innerHTML=out;
-}
 
+    // Merge any 2026 groups not yet stored (skip Shivansh's individual group intentionally)
+    const existingGids = new Set(S.groups.map(g => g.id));
+    SEED_2026_GROUPS.forEach(g => {
+      if (!existingGids.has(g.id)) {
+        S.groups.push({...g});
+        changed = true;
+      }
+    });
 
+    // Merge any 2026 orders not yet stored
+    const existingOids = new Set(S.orders.map(o => o.id));
+    SEED_2026_ORDERS.forEach(o => {
+      if (!existingOids.has(o.id)) {
+        S.orders.push({...o});
+        changed = true;
+      }
+    });
 
-</script>
+    // Ensure signatories exist
+    if (!S.settings.signatories || !S.settings.signatories.length) {
+      S.settings.signatories = [
+        {id:'s1', name:'(मनीष शर्मा)',              desig:'उप महाप्रबंधक(मा०सं०)/विभागाध्यक्ष', active:true},
+        {id:'s2', name:'(कनिका मल्होत्रा)',           desig:'प्रबंधक(मा०सं०)',                    active:true},
+        {id:'s3', name:'(कुमार किसलय राज्यवर्धन)',   desig:'प्रबंधक(मा०सं०)',                    active:true}
+      ];
+      S.settings.defaultSignatoryId = 's1';
+      changed = true;
+    }
 
-<!-- MOBILE HEADER -->
-<div id="mobile-header">
-  <div class="mh-left">
-    <button class="mh-menu" onclick="toggleSB()" aria-label="Menu">&#9776;</button>
-    <span class="mh-title" id="mh-title">Dashboard</span>
-  </div>
-  <button class="mh-sync" onclick="syncSheet()" title="Sync">&#x1F504;</button>
-</div>
-<div id="sidebar-overlay" onclick="closeSB()"></div>
-
-<!-- BOTTOM NAV -->
-<div id="bottom-nav">
-  <div class="bn-item" id="bn-dashboard" onclick="mgo('dashboard')"><span class="bn-icon">&#x1F4CA;</span><span>Home</span></div>
-  <div class="bn-item" id="bn-trainees" onclick="mgo('trainees')"><span class="bn-icon">&#x1F465;</span><span>Trainees</span><span class="bn-dot" id="bn-dot">0</span></div>
-  <div class="bn-item" id="bn-deptview" onclick="mgo('deptview')"><span class="bn-icon">&#x1F3ED;</span><span>Depts</span></div>
-  <div class="bn-item" id="bn-orders" onclick="mgo('orders')"><span class="bn-icon">&#x1F4C4;</span><span>Orders</span></div>
-  <div class="bn-item" id="bn-more" onclick="toggleMore()"><span class="bn-icon">&#x22EF;</span><span>More</span></div>
-</div>
-
-<!-- MORE PANEL -->
-<div id="more-panel">
-  <div class="mp-item" onclick="mgo('groups')"><span class="mp-icon">&#x1F4CB;</span>Groups</div>
-  <div class="mp-item" onclick="mgo('certificates')"><span class="mp-icon">&#x1F393;</span>Certs</div>
-  <div class="mp-item" onclick="mgo('rep_status')"><span class="mp-icon">&#x1F504;</span>Status</div>
-  <div class="mp-item" onclick="mgo('rep_dept')"><span class="mp-icon">&#x1F3D7;&#xFE0F;</span>Dept Rpt</div>
-  <div class="mp-item" onclick="mgo('rep_inst')"><span class="mp-icon">&#x1F3EB;</span>Inst</div>
-  <div class="mp-item" onclick="mgo('rep_cert')"><span class="mp-icon">&#x1F4DC;</span>Dispatch</div>
-  <div class="mp-item" onclick="mgo('rep_annual')"><span class="mp-icon">&#x1F4C5;</span>Annual</div>
-  <div class="mp-item" onclick="mgo('settings')"><span class="mp-icon">&#x2699;&#xFE0F;</span>Settings</div>
-</div>
-
-<!-- FAB -->
-<button class="fab" onclick="fabAct()" title="Add">+</button>
-
-<script>
-
-// ── MOBILE NAV ──
-const PAGE_TITLES = {dashboard:'Dashboard',trainees:'Trainees',groups:'Groups',orders:'Orders',deptview:'Dept Live View',certificates:'Certificates',rep_status:'Status Report',rep_dept:'Dept Report',rep_inst:'Institution Report',rep_cert:'Cert & Dispatch',rep_annual:'Annual Summary',settings:'Settings'};
-
-function toggleSB(){
-  document.getElementById('sidebar').classList.toggle('sb-open');
-  document.getElementById('sidebar-overlay').classList.toggle('sb-open');
-}
-function closeSidebar(){document.getElementById("sidebar").classList.remove("sb-open");document.getElementById("sidebar-overlay").classList.remove("sb-open");}
-function closeSB(){
-  closeSidebar&&closeSidebar();
-  document.getElementById('sidebar').classList.remove('sb-open');
-  document.getElementById('sidebar-overlay').classList.remove('sb-open');
-}
-function toggleMore(){
-  document.getElementById('more-panel').classList.toggle('mp-open');
-  document.getElementById('bn-more').classList.toggle('active');
-}
-function closeMore(){
-  document.getElementById('more-panel').classList.remove('mp-open');
-  document.getElementById('bn-more').classList.remove('active');
-}
-function mgo(page){
-  closeSB(); closeMore();
-  go(page);
-  updateMobileNav(page);
-  // update bottom nav highlight
-  ['dashboard','trainees','deptview','orders'].forEach(p=>{
-    const el=document.getElementById('bn-'+p);
-    if(el) el.classList.toggle('active', p===page);
-  });
-  if(!['dashboard','trainees','deptview','orders'].includes(page)){
-    document.querySelectorAll('.bn-item').forEach(el=>el.classList.remove('active'));
-    document.getElementById('bn-more').classList.add('active');
+    if (changed) save();
   }
 }
-function fabAct(){
-  if(curPage==='trainees') openAddTrainee();
-  else if(curPage==='groups') openCreateGroup();
-  else mgo('trainees');
-}
-function updateMobileBadge(){
-  const n=unordered().length;
-  const dot=document.getElementById('bn-dot');
-  if(dot){dot.textContent=n;dot.classList.toggle('show',n>0);}
-}
 
-// Update mobile UI when navigating (no recursive patch)
-function updateMobileNav(page){
-  updateMobileBadge();
-  const t=document.getElementById('mh-title');
-  if(t) t.textContent = PAGE_TITLES[page]||page;
-}
-
-</script>
-</body>
-</html>
